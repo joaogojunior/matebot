@@ -1,0 +1,18 @@
+{% extends "portal/portal.html" %}
+{% comment %}
+	Processando...
+{% endcomment %}
+
+{% block title %}
+  Processando
+{% endblock %}
+
+{% block content %}
+  <section>
+    <p>Processando sua gravação...</p>
+     </section>
+     <script>
+     var loader = window.open("/static/loader.gif", "loader", "width=30, height=30,top=200,left=200");
+     window.location.href = "/resultado/"
+     </script>
+{% endblock %}

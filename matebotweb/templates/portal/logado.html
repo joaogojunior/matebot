@@ -1,0 +1,21 @@
+{% extends "portal/portal.html" %}
+{% comment %}
+	Página principal do portal.
+{% endcomment %}
+
+{% block title %}
+  Portal
+{% endblock %}
+
+{% block content %}
+  <section>
+    <h2>Bemvindo, {{ user.get_username }}</h2>
+    <p>Gostaria que eu medisse seu stress? <br>
+    Clique <a href="/stress">aqui</a> e faça o teste!</p>
+    <p><font color="red">Atenção!</font> Para funcionar você tem que dar acesso ao microfone<br>
+    quando o seu browser perguntar a seguir, ok?</p>
+    <a href="/stress">Fazer o teste de stress</a>
+
+    <p>Visitas: {{ visitas }}</p>
+  </section>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% comment %}
+	Este é apenas um simples template...
+{% endcomment %}
+
+{% block head %}
+  <title>Matebot Project | {% block title %}{% endblock %}</title>
+{% endblock %}
+
+{% block body %}
+  <header>
+    <h1>Matebot Project | Web Portal</h1>
+  </header>
+
+  <img src="{{ STATIC_URL }}matebot.jpg">
+  
+  <section>
+    <ul>
+      <li><a href="/portal/">home</a></li>
+      <li><a href="/logout/">logout</a></li>
+    </ul>
+  </section>
+
+  {% block content %}{% endblock %}
+
+  <footer>
+    <span>&copy; 2015-2018, joaogojunior@gmail.com</span>
+  </footer>
+{% endblock %}

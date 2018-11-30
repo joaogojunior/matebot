@@ -1,0 +1,153 @@
+{% extends "portal/portal.html" %}
+{% comment %}
+	Resultado do teste de stress
+{% endcomment %}
+
+{% block title %}
+  Resultado
+
+{% endblock %}
+
+{% block content %}
+  <section>
+    <h2>Olá novamente, {{ user.get_username }}!</h2>
+    <p>Vejo que você enviou uma gravação de aproximadamente {{ tam }} segundos!</p>
+    <p>Transcrição :</p>
+    <p>"{{ texto }}"</p>
+    <p>Com um total de {{ total }} sílabas!</p>
+    <p>Logo sua velocidade de fala está em torno de {{ vel }} sílabas por minuto!</p>
+	<h2>Resultado :</h2>
+	{{ dados }}
+    <p>Gostou do resultado? Me ajude a acertar mais!</p>
+    <p>Como estava seu humor?</p>
+    <div>
+      <input type="radio" id="feliz" name="estado" value="feliz">
+      <label for="feliz">Feliz</label>
+    </div>
+    <div>
+      <input type="radio" id="relax" name="estado" value="relax">
+      <label for="relax">Relaxado</label>
+    </div>
+    <div>
+      <input type="radio" id="normal" name="estado" value="normal">
+      <label for="normal">Normal</label>
+    </div>
+    <div>
+      <input type="radio" id="stress" name="estado" value="stress">
+      <label for="stress">Estressado</label>
+    </div>
+    <div>
+      <input type="radio" id="triste" name="estado" value="triste">
+      <label for="triste">Triste</label>
+    </div>
+    <br>
+    <button onclick="salvar(this);" id="btnsalvar"/>Enviar resultado</button>
+
+  </section>
+  
+<h3>Mensagens de debug:</h3>
+<pre id="log"></pre>
+
+<script>
+
+var loader;
+var rotulo = "";
+
+function __log(e, data) {
+    log.innerHTML += "\n" + e + " " + (data || '');
+  }
+	
+  	// Required for Django CSRF
+	function getCookie(name) {
+		__log('iniciando cookieValue como null');
+        var cookieValue = null;
+        if (document.cookie && document.cookie != '') {
+ 	      	__log('entra aqui se document.coockie existe');
+            var cookies = document.cookie.split(';');
+            __log('iterando cada cookie');
+            __log(cookies.length);
+            for (var i = 0; i < cookies.length; i++) {
+            	__log('trim');
+            	__log(i);
+                var cookie = cookies[i];
+                cookies.filter(function(e){return e!==cookie})
+                __log(cookie);
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                	__log('cookie comeca com substring correta');
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        __log('retornando cookie');
+        return cookieValue;
+    }
+
+function salvar(button) {
+  	
+    __log('Aqui salva todos os dados no db...');
+    
+ 	var URL = "/salvar/";
+
+    __log('Checa se o rotulo foi informado...');
+
+  if (document.getElementById('stress').checked) {
+    rotulo = document.getElementById('stress').value
+    } else if (document.getElementById('normal').checked) {
+    rotulo = document.getElementById('normal').value
+    } else if (document.getElementById('relax').checked) {
+    rotulo = document.getElementById('relax').value
+    } else if (document.getElementById('triste').checked) {
+    rotulo = document.getElementById('triste').value
+    } else if (document.getElementById('feliz').checked) {
+    rotulo = document.getElementById('feliz').value
+    }
+
+  if (rotulo == "") {
+  alert("Informe o seu estado")
+  } else {
+
+		__log('upload init');
+		var csrftoken = getCookie('csrftoken');
+		__log('Instanciado csrftoken');
+		var formData = new FormData();
+	    __log('Instanciado formdata');
+    	var xhr = new XMLHttpRequest();
+    	__log('Instanciado xhr');
+
+    	formData.append('rotulo', rotulo);
+    	__log('Adicionando rotulo ao form');
+
+    	xhr.open('POST', '/salvar/', true);
+    	__log('Usando POST para /salvar/');
+
+    	xhr.setRequestHeader("X-CSRFToken", csrftoken);
+        __log('criando header do cookie');
+
+    	__log('Enviando formdata');
+    	xhr.send(formData);
+    
+    alert('Obrigado pela sua participação! :)');
+    
+    window.location.href = "/stress/";
+    
+	}
+	}
+	
+  window.onload = function init() {
+  
+  	__log('Entrando no init da pagina!');
+  	
+	loader = window.open("", "loader", "");
+	if ( loder != null ) {
+	loader.close();
+	__log('Fechando popup...');
+	}
+	__log('Fim do init...');
+	
+	}
+		
+</script>
+
+{% endblock %}

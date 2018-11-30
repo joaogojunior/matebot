@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% comment %}
+	Teste de nível de stress
+{% endcomment %}
+
+{% block head %}
+	<title>Gravação e reprodução de áudio | {% block title %}{% endblock %}</title> 
+ 	<style type='text/css'>
+    ul { list-style: none; }
+    #recordingslist audio { display: block; margin-bottom: 10px; }
+ 	</style>
+ 	<script src="/static/js/recorderjs/recorder.js"></script>
+{% endblock %}
+
+
+{% block body %}
+
+  <header>
+    <h1>Matebot Project | Web Portal</h1>
+  </header>
+
+  <img src="{{ STATIC_URL }}matebot.jpg">
+  
+  <section>
+    <ul>
+      <li><a href="/portal/">home</a></li>
+      <li><a href="/logout/">logout</a></li>
+    </ul>
+  </section>
+
+  {% block content %}{% endblock %}
+
+  <p>Informe sua idade:</p>
+  <input type="text" id="idade" name="idade" value="{{ idade }}" size="2" maxlength="2">
+  <p>Informe seu genero:</p>
+  <div>
+    <input type="radio" id="masculino" name="sexo" value="masculino">
+    <label for="masculino">Masculino</label>
+  </div>
+
+  <div>
+    <input type="radio" id="feminino" name="sexo" value="feminino">
+    <label for="feminino">Feminino</label>
+  </div>
+  
+  <h2>Gravações</h2>
+  <button onclick="startRecording(this);">gravar</button>
+  <button onclick="stopRecording(this);" disabled>parar</button>
+  <ul id="recordingslist"></ul>
+  
+  <h3>Mensagens de debug:</h3>
+  <pre id="log"></pre>
+
+  <footer>
+    <span>&copy; 2015-2018, joaogojunior@gmail.com</span>
+  </footer>
+
+ <script>
+  
+  function __log(e, data) {
+    log.innerHTML += "\n" + e + " " + (data || '');
+  }
+
+  var audio_context;
+  var recorder;
+  var qtd; 
+  var blobs;
+  var idadetxt = document.getElementById("idade");
+  var sexo;
+
+  __log('checando se o genero veio da sessao...');
+  sexo = '{{ sexo }}';
+  if (sexo != "") {
+    __log('selecionando o genero');
+    __log(sexo);
+      document.getElementById(sexo).checked = true;
+      }
+
+  function startUserMedia(stream) {
+    
+    //firefox bug silence after 5 sec workarround
+    if (window.navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+    window.source = audio_context.createMediaStreamSource(stream);
+    }
+    
+    var input = audio_context.createMediaStreamSource(stream);
+    
+    __log('Media stream criado.');
+
+    // Uncomment if you want the audio to feedback directly
+    //input.connect(audio_context.destination);
+    //__log('Input connected to audio context destination.');
+    
+    recorder = new Recorder(input);
+    __log('Recorder instanciado.');
+  }
+
+  function startRecording(button) {
+    recorder && recorder.record();
+    button.disabled = true;
+    button.nextElementSibling.disabled = false;
+    __log('Gravando...');
+  }
+
+  function stopRecording(button) {
+    recorder && recorder.stop();
+    button.disabled = true;
+    button.previousElementSibling.disabled = false;
+    __log('Parando gravação.');
+    
+    // create WAV download link using audio data blob
+    createDownloadLink();
+    
+    recorder.clear();
+  }
+
+  function createDownloadLink() {
+  	__log('Inicio de createDownloadLink');
+    recorder && recorder.exportWAV(function(blob) {
+      var url = URL.createObjectURL(blob);
+      __log('Cria url do blob');
+      
+      var li = document.createElement('li');
+      
+      qtd = qtd + 1;
+      
+      //no android nao usa audio element ja q ele nao funciona com o blob
+      if (window.navigator.userAgent.toLowerCase().indexOf('android') > -1) {
+      __log('Em vez de player coloca aviso... android');
+	  var au = document.createElement('p');
+	  au.appendChild(document.createTextNode("Android não suporta o player do audio diretamente :(, mas você ainda assim pode enviar clicando no botão abaixo... ;)"));
+	  } else {
+      //nos outros usa audio element
+      __log('Criando audio elemento');
+      var au = document.createElement('audio');
+      au.setAttribute('src', url);
+      au.controls = true;
+      au.load();
+      __log('configura player');
+      }
+      
+      var hf = document.createElement('a');
+      var bt = document.createElement('button');
+      
+      __log('Incrementa qtd = ' + qtd);
+      bt.name = qtd;
+      bt.setAttribute("onClick", "uploadFile(this);");
+      bt.innerHTML = "Enviar";
+      __log('configura botao');
+      hf.id = 'a' + qtd;
+      hf.href = url;
+      hf.download = new Date().toISOString() + '.wav';
+      hf.innerHTML = hf.download;
+      __log('configura link');
+      li.appendChild(au);
+      if (window.navigator.userAgent.toLowerCase().indexOf('android') > -1) {
+      li.appendChild(document.createElement('br'));
+      }
+      li.appendChild(hf);
+      li.appendChild(bt);
+      recordingslist.appendChild(li);
+      __log('atualiza na pagina');
+      blobs.push(blob);
+      __log('salva blob');
+    });
+  }
+  
+  function uploadFile(button) {
+  	
+  	__log(blobs.length);
+    __log('Aqui faz o upload...');
+
+  if (sexo == "" && document.getElementById('masculino').checked) {
+    sexo = document.getElementById('masculino').value
+    } else if (sexo == "" && document.getElementById('feminino').checked) {
+    sexo = document.getElementById('feminino').value
+    }
+
+    __log('Checa se idade e genero estao preenchidos...');
+    if (idadetxt.value == "") {
+     alert("Preencha a idade")
+    } else if (sexo == "") {
+     alert("Informe o sexo")
+    }
+    else {
+	var progress = document.createElement('progress');
+	progress.min = 0;
+	progress.max = 100;
+	progress.value = 0;
+	var progressText = document.createTextNode("Concluído: ");
+	
+	recordingslist.innerHTML = "";
+	recordingslist.appendChild(progressText);
+	recordingslist.appendChild(progress);
+	
+	blob=blobs[button.name -1]
+	blobs = [];
+			
+	__log('tamanho :' + blob.size);
+	
+	//A blob is almost a File - it's just missing the two properties below which we will add
+    __log('Adicionando data');
+    blob.lastModifiedDate = new Date();
+    __log('Adicionando nome');
+    blob.name = 'matebot.wav';
+
+    upload(blob,progress);
+  }
+  }
+  
+  	// Required for Django CSRF
+	function getCookie(name) {
+		__log('iniciando cookieValue como null');
+        var cookieValue = null;
+        if (document.cookie && document.cookie != '') {
+ 	      	__log('entra aqui se document.coockie existe');
+            var cookies = document.cookie.split(';');
+            __log('iterando cada cookie');
+            __log(cookies.length);
+            for (var i = 0; i < cookies.length; i++) {
+            	__log('trim');
+            	__log(i);
+                var cookie = cookies[i];
+                cookies.filter(function(e){return e!==cookie})
+                __log(cookie);
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                	__log('cookie comeca com substring correta');
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        __log('retornando cookie');
+        return cookieValue;
+    }
+	
+	function upload(file,progressBar){
+		__log('upload init');
+		var csrftoken = getCookie('csrftoken');
+		__log('Instanciado csrftoken');
+		var formData = new FormData();
+	    __log('Instanciado formdata');
+    	var xhr = new XMLHttpRequest();
+    	__log('Instanciado xhr');
+    	formData.append('file', file);
+    	__log('Adicionando arquivo ao form');
+    	formData.append('idade', idadetxt.value);
+    	__log('Adicionando idade ao form');
+    	formData.append('sexo', sexo);
+    	__log('Adicionando sexo ao form');
+  
+    	xhr.open('POST', '/upload/', true);
+    	__log('Usando POST para /upload/');
+
+    	xhr.responseType = 'text';
+    	__log('Setando resposta como texto');
+
+    	xhr.setRequestHeader("X-CSRFToken", csrftoken);
+        __log('criando header do cookie');  
+        
+        xhr.upload.onloadend = function() {
+        	progressBar.value = 100;
+        };
+        
+        xhr.upload.onprogress = function(p) {
+            if (p.lengthComputable) {
+                progressBar.value = (p.loaded / p.total) * 100;
+                //__log(progressBar.value);
+                progressBar.textContent = progressBar.value; // Fallback for unsupported browsers.
+            }
+        };
+    	
+    	__log('Enviando formdata');
+    	xhr.send(formData);
+
+    	xhr.onreadystatechange=function(){
+    	   __log('debug - xhr readystate e status');
+    	   __log(xhr.readyState);
+    	   __log(xhr.status);
+	       if (xhr.readyState==4 && xhr.status==200){
+	          __log('entrou no if maldito!');
+	          __log(xhr.responseText);
+    	      var data = JSON.parse(xhr.responseText);
+        	  var uploadResult = data['message'];
+        	  var filename = data['filename'];
+        	  __log('filename e message');
+        	  __log(filename);
+        	  __log(uploadResult);
+
+          	if (uploadResult=='failure'){
+            	 __log('falha no upload');
+          	} else if (uploadResult=='success'){
+          		__log('Upload completado!');
+
+          		window.location.href = "/aguarde/";
+          		}
+       		}
+    	}
+	}
+
+  window.onload = function init() {
+    try {
+      // webkit shim
+      window.AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!navigator.getUserMedia) {
+            navigator.getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia || navigator.GetUserMedia; }
+	              
+      window.URL = window.URL || window.webkitURL;
+      
+      audio_context = new AudioContext();
+     __log('Audio context instanciado.');
+     
+      blobs = new Array();
+      __log('blobs array instanciado.');
+      
+      qtd = 0;
+      __log('zerando qtd.');
+      
+      __log('navigator.getUserMedia ' + (navigator.getUserMedia ? 'disponível.' : 'não presente!'));
+    } catch (e) {
+      alert('Este browser não da suporte a Web audio... :(');
+    }
+		
+    	__log('executando navigator.getUserMedia');
+    	navigator.getUserMedia(
+        {
+            "audio": {
+                "mandatory": {
+                    "googEchoCancellation": "false",
+                    "googAutoGainControl": "false",
+                    "googNoiseSuppression": "false",
+                    "googHighpassFilter": "false"
+                },
+                "optional": []
+            },
+        }, startUserMedia, function(e) {
+      __log('Sem suporte a live audio input: ' + e);
+    });
+    
+  };
+  </script>
+  
+  {% endblock %}
